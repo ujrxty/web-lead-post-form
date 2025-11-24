@@ -1,392 +1,260 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Partner Web-to-Lead Form</title>
-
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-
-<style>
-
-.result-box {
-
-background-color: #f8fafb; /* Light background */
-
-border: 1px solid #ddd; /* Border color */
-
-border-radius: 10px; /* Rounded corners */
-
-padding: 20px; /* Padding */
-
-margin-top: 10px; /* Margin */
-
-}
-
-.key {
-
-font-weight: bold; /* Bold for keys */
-
-color: #4a4a4a; /* Darker color for keys */
-
-}
-
-.value {
-
-color: #1f2937; /* Text color for values */
-
-}
-
-.success {
-
-color: #2E7D32; /* Green for success messages */
-
-font-weight: bold; /* Bold text for emphasis */
-
-}
-
-.error {
-
-color: #C62828; /* Red for error messages */
-
-font-weight: bold; /* Bold text for emphasis */
-
-}
-
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partner Web-to-Lead Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .result-box {
+            background-color: #f8fafb; /* Light background */
+            border: 1px solid #ddd; /* Border color */
+            border-radius: 10px; /* Rounded corners */
+            padding: 20px; /* Padding */
+            margin-top: 10px; /* Margin */
+        }
+        .key {
+            font-weight: bold; /* Bold for keys */
+            color: #4a4a4a; /* Darker color for keys */
+        }
+        .value {
+            color: #1f2937; /* Text color for values */
+        }
+        .success {
+            color: #2E7D32; /* Green for success messages */
+            font-weight: bold; /* Bold text for emphasis */
+        }
+        .error {
+            color: #C62828; /* Red for error messages */
+            font-weight: bold; /* Bold text for emphasis */
+        }
+    </style>
 </head>
-
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
 
 <div class="w-full max-w-3xl bg-white shadow-lg rounded-2xl p-8 border border-gray-200">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Partner Web-to-Lead Referral Form</h2>
 
-<h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Partner Web-to-Lead Referral Form</h2>
+    <!-- Ping API Section -->
+    <div class="mt-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Ping Phone Number</h2>
+        <div class="mb-4">
+            <label class="font-semibold text-gray-700">Source Phone</label>
+            <input id="pingPhone" class="mt-1 p-3 w-full border rounded-lg" type="text" placeholder="Enter phone number" required pattern="\d{10}">
+        </div>
 
-routeros
-<!-- Ping API Section -->
-<div class="mt-6">
-    <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Ping Phone Number</h2>
-    <div class="mb-4">
-        <label class="font-semibold text-gray-700">Source Phone</label>
-        <input id="pingPhone" class="mt-1 p-3 w-full border rounded-lg" type="text" placeholder="Enter phone number" required pattern="\d{10}">
+        <div class="mb-4 text-center">
+            <button onclick="pingApi()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl">Ping</button>
+        </div>
+
+        <div id="pingResult" class="text-center text-gray-700"></div>
     </div>
 
-    <div class="mb-4 text-center">
-        <button onclick="pingApi()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl">Ping</button>
+    <form id="leadForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <label class="font-semibold text-gray-700">First Name</label>
+            <input id="firstName" required class="mt-1 p-3 w-full border rounded-lg" type="text">
+        </div>
+
+        <div>
+            <label class="font-semibold text-gray-700">Last Name</label>
+            <input id="lastName" required class="mt-1 p-3 w-full border rounded-lg" type="text">
+        </div>
+
+        <div>
+            <label class="font-semibold text-gray-700">Gender</label>
+            <select id="gender" class="mt-1 p-3 w-full border rounded-lg">
+                <option>Male</option>
+                <option>Female</option>
+                <option>Unknown</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="font-semibold text-gray-700">Date of Birth</label>
+            <input id="dob" placeholder="MM/DD/YYYY" required class="mt-1 p-3 w-full border rounded-lg" type="text">
+        </div>
+
+        <div>
+            <label class="font-semibold text-gray-700">Phone</label>
+            <input id="phone" required class="mt-1 p-3 w-full border rounded-lg" type="text">
+        </div>
+
+        <div>
+            <label class="font-semibold text-gray-700">Mobile Phone</label>
+            <input id="mobilePhone" class="mt-1 p-3 w-full border rounded-lg" type="text">
+        </div>
+
+        <div class="md:col-span-2">
+            <label class="font-semibold text-gray-700">Email</label>
+            <input id="email" class="mt-1 p-3 w-full border rounded-lg" type="email">
+        </div>
+
+        <div class="md:col-span-2">
+            <label class="font-semibold text-gray-700">Street</label>
+            <input id="street" class="mt-1 p-3 w-full border rounded-lg" type="text">
+        </div>
+
+        <div>
+            <label class="font-semibold text-gray-700">City</label>
+            <input id="city" class="mt-1 p-3 w-full border rounded-lg" type="text">
+        </div>
+
+        <div>
+            <label class="font-semibold text-gray-700">State</label>
+            <input id="state" class="mt-1 p-3 w-full border rounded-lg" type="text">
+        </div>
+
+        <div>
+            <label class="font-semibold text-gray-700">Postal Code</label>
+            <input id="postalCode" class="mt-1 p-3 w-full border rounded-lg" type="text">
+        </div>
+
+        <div>
+            <label class="font-semibold text-gray-700">Primary Insurance Company</label>
+            <input id="primaryInsurance" class="mt-1 p-3 w-full border rounded-lg" type="text">
+        </div>
+
+        <div>
+            <label class="font-semibold text-gray-700">Total Med Count</label>
+            <input id="totalMedCount" class="mt-1 p-3 w-full border rounded-lg" type="number">
+        </div>
+
+        <div class="md:col-span-2">
+            <label class="font-semibold text-gray-700">List Affiliate Name (Campaign)</label>
+            <input id="listAffiliateName" class="mt-1 p-3 w-full border rounded-lg" type="text" value="Auren Health" readonly>
+        </div>
+
+        <div class="md:col-span-2">
+            <button type="button" onclick="submitLead()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-lg font-semibold shadow-md">Submit Lead</button>
+        </div>
+    </form>
+
+    <!-- JSON Toggle Button -->
+    <div class="mt-6 text-center">
+        <button onclick="toggleJSON()" class="bg-gray-700 hover:bg-gray-800 text-white py-2 px-6 rounded-xl font-semibold shadow-md">Show / Hide JSON Payload</button>
     </div>
 
-    <div id="pingResult" class="text-center text-gray-700"></div>
-</div>
-
-<form id="leadForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div>
-        <label class="font-semibold text-gray-700">First Name</label>
-        <input id="firstName" required class="mt-1 p-3 w-full border rounded-lg" type="text">
-    </div>
-
-    <div>
-        <label class="font-semibold text-gray-700">Last Name</label>
-        <input id="lastName" required class="mt-1 p-3 w-full border rounded-lg" type="text">
-    </div>
-
-    <div>
-        <label class="font-semibold text-gray-700">Gender</label>
-        <select id="gender" class="mt-1 p-3 w-full border rounded-lg">
-            <option>Male</option>
-            <option>Female</option>
-            <option>Unknown</option>
-        </select>
-    </div>
-
-    <div>
-        <label class="font-semibold text-gray-700">Date of Birth</label>
-        <input id="dob" placeholder="MM/DD/YYYY" required class="mt-1 p-3 w-full border rounded-lg" type="text">
-    </div>
-
-    <div>
-        <label class="font-semibold text-gray-700">Phone</label>
-        <input id="phone" required class="mt-1 p-3 w-full border rounded-lg" type="text">
-    </div>
-
-    <div>
-        <label class="font-semibold text-gray-700">Mobile Phone</label>
-        <input id="mobilePhone" class="mt-1 p-3 w-full border rounded-lg" type="text">
-    </div>
-
-    <div class="md:col-span-2">
-        <label class="font-semibold text-gray-700">Email</label>
-        <input id="email" class="mt-1 p-3 w-full border rounded-lg" type="email">
-    </div>
-
-    <div class="md:col-span-2">
-        <label class="font-semibold text-gray-700">Street</label>
-        <input id="street" class="mt-1 p-3 w-full border rounded-lg" type="text">
-    </div>
-
-    <div>
-        <label class="font-semibold text-gray-700">City</label>
-        <input id="city" class="mt-1 p-3 w-full border rounded-lg" type="text">
-    </div>
-
-    <div>
-        <label class="font-semibold text-gray-700">State</label>
-        <input id="state" class="mt-1 p-3 w-full border rounded-lg" type="text">
-    </div>
-
-    <div>
-        <label class="font-semibold text-gray-700">Postal Code</label>
-        <input id="postalCode" class="mt-1 p-3 w-full border rounded-lg" type="text">
-    </div>
-
-    <div>
-        <label class="font-semibold text-gray-700">Primary Insurance Company</label>
-        <input id="primaryInsurance" class="mt-1 p-3 w-full border rounded-lg" type="text">
-    </div>
-
-    <div>
-        <label class="font-semibold text-gray-700">Total Med Count</label>
-        <input id="totalMedCount" class="mt-1 p-3 w-full border rounded-lg" type="number">
-    </div>
-
-    <div class="md:col-span-2">
-        <label class="font-semibold text-gray-700">List Affiliate Name (Campaign)</label>
-        <input id="listAffiliateName" class="mt-1 p-3 w-full border rounded-lg" type="text">
-    </div>
-
-    <div class="md:col-span-2">
-        <button type="button" onclick="submitLead()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-lg font-semibold shadow-md">Submit Lead</button>
-    </div>
-</form>
-
-<!-- JSON Toggle Button -->
-<div class="mt-6 text-center">
-    <button onclick="toggleJSON()" class="bg-gray-700 hover:bg-gray-800 text-white py-2 px-6 rounded-xl font-semibold shadow-md">Show / Hide JSON Payload</button>
-</div>
-
-<!-- Hidden JSON Display Box -->
-<pre id="jsonOutput" class="bg-gray-900 text-white p-4 rounded-lg overflow-auto text-sm mt-4 hidden">{}</pre>
-
+    <!-- Hidden JSON Display Box -->
+    <pre id="jsonOutput" class="bg-gray-900 text-white p-4 rounded-lg overflow-auto text-sm mt-4 hidden">{}</pre>
 </div>
 
 <script>
-
 async function submitLead() {
+    const payload = {
+        "Referral_Source_System": "W2L PROXY",
+        "LeadSource": "Phone",
+        "RecordTypeId": "012390000006DX3AAM",
+        "Referral_Source_Details": "Warm Transfer",
+        "List_Affiliate_Name": "Auren Health",  // Hard-coded affiliate name
+        "Web_Referrer_Company": "001Pi00005enAmuIAE",
+        "Referrals": [{
+            "FirstName": document.getElementById("firstName").value,
+            "LastName": document.getElementById("lastName").value,
+            "Gender": document.getElementById("gender").value,
+            "Date_of_Birth": document.getElementById("dob").value,
+            "Status": "Awaiting Scheduling",
+            "Phone": document.getElementById("phone").value,
+            "MobilePhone": document.getElementById("mobilePhone").value,
+            "Email": document.getElementById("email").value,
+            "Street": document.getElementById("street").value,
+            "City": document.getElementById("city").value,
+            "State": document.getElementById("state").value,
+            "PostalCode": document.getElementById("postalCode").value,
+            "Episode_ID": "YY321",
+            "Scheduling_Status": "Awaiting 1st Patient Contact",
+            "Primary_Insurance_Company": document.getElementById("primaryInsurance").value,
+            "Total_Med_Count": document.getElementById("totalMedCount").value,
+            "Batch_Status": "Unreleased"
+        }]
+    };
 
-const payload = {
+    document.getElementById("jsonOutput").textContent = JSON.stringify(payload, null, 4);
 
-"Referral_Source_System": "W2L PROXY",
+    // Local proxy for lead submission
+    const proxyUrl = 'https://cors-proxy-jwvg.onrender.com/proxy';
+    const apiUrl = "https://exactcarepharmacy.my.salesforce-sites.com/lead/services/apexrest/v1/LeadApi/";
 
-"LeadSource": "Phone",
+    try {
+        const response = await fetch(proxyUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: apiUrl, data: payload })
+        });
 
-"RecordTypeId": "012390000006DX3AAM",
+        const responseData = await response.json(); // Parse response as JSON
 
-"Referral_Source_Details": "Warm Transfer",
-
-"List_Affiliate_Name": document.getElementById("listAffiliateName").value || "N/A",
-
-"Web_Referrer_Company": "001Pi00005enAmuIAE",
-
-"Referrals": [{
-
-"FirstName": document.getElementById("firstName").value,
-
-"LastName": document.getElementById("lastName").value,
-
-"Gender": document.getElementById("gender").value,
-
-"Date_of_Birth": document.getElementById("dob").value,
-
-"Status": "Awaiting Scheduling",
-
-"Phone": document.getElementById("phone").value,
-
-"MobilePhone": document.getElementById("mobilePhone").value,
-
-"Email": document.getElementById("email").value,
-
-"Street": document.getElementById("street").value,
-
-"City": document.getElementById("city").value,
-
-"State": document.getElementById("state").value,
-
-"PostalCode": document.getElementById("postalCode").value,
-
-"Episode_ID": "YY321",
-
-"Scheduling_Status": "Awaiting 1st Patient Contact",
-
-"Primary_Insurance_Company": document.getElementById("primaryInsurance").value,
-
-"Total_Med_Count": document.getElementById("totalMedCount").value,
-
-"Batch_Status": "Unreleased"
-
-}]
-
-};
-
-document.getElementById("jsonOutput").textContent = JSON.stringify(payload, null, 4);
-
-// Local proxy for lead submission
-
-const proxyUrl = 'https://cors-proxy-jwvg.onrender.com/proxy';
-
-const apiUrl = "https://exactcarepharmacy.my.salesforce-sites.com/lead/services/apexrest/v1/LeadApi/";
-
-try {
-
-const response = await fetch(proxyUrl, {
-
-method: "POST",
-
-headers: { "Content-Type": "application/json" },
-
-body: JSON.stringify({ url: apiUrl, data: payload })
-
-});
-
-const responseData = await response.json(); // Parse response as JSON
-
-if (response.ok) {
-
-alert("Lead Submitted Successfully!");
-
-} else {
-
-// Check for specific error messages if available
-
-const errorMessage = responseData.error
-
-? responseData.error || "An error occurred."
-
-: "An unknown error occurred.";
-
-alert("Error submitting lead: " + errorMessage);
-
-}
-
-} catch (error) {
-
-alert("Network error: " + error.message);
-
-}
-
+        if (response.ok) {
+            alert("Lead Submitted Successfully!");
+        } else {
+            const errorMessage = responseData.error 
+                ? responseData.error || "An error occurred."
+                : "An unknown error occurred.";
+            alert("Error submitting lead: " + errorMessage);
+        }
+    } catch (error) {
+        alert("Network error: " + error.message);
+    }
 }
 
 async function pingApi() {
+    const partnerName = 'MetzInsurance';
+    const token = 'w4qwC60-E964tVzmF-n1KB9Ks1dr5peaaHG215215R2dAzFuiV7Zfg==';
+    const sourcePhone = document.getElementById("pingPhone").value;
 
-const partnerName = 'MetzInsurance';
+    const corsProxy = 'https://api.allorigins.win/get?url=';
+    const apiUrl = `https://func-do-not-call.azurewebsites.net/api/v1/do_not_call/${partnerName}/${sourcePhone}?code=${token}`;
+    const url = corsProxy + encodeURIComponent(apiUrl);
 
-const token = 'w4qwC60-E964tVzmF-n1KB9Ks1dr5peaaHG215215R2dAzFuiV7Zfg==';
+    try {
+        const response = await fetch(url);
+        const responseData = await response.json();
+        
+        if (response.ok) {
+            const content = JSON.parse(responseData.contents); // Parse the JSON content
 
-const sourcePhone = document.getElementById("pingPhone").value;
-
-const corsProxy = 'https://api.allorigins.win/get?url=';
-
-const apiUrl = `https://func-do-not-call.azurewebsites.net/api/v1/do_not_call/${partnerName}/${sourcePhone}?code=${token}`;
-
-const url = corsProxy + encodeURIComponent(apiUrl);
-
-try {
-
-const response = await fetch(url);
-
-const responseData = await response.json();
-
-
-if (response.ok) {
-
-const content = JSON.parse(responseData.contents); // Parse the JSON content
-
-// Construct result output
-
-const resultHtml = `
-
-<div class="result-box">
-
-<div class="success">Ping successful!</div>
-
-<div class="key">Phone Exists:</div>
-
-<div class="value">${content.phoneExists ? "Yes" : "No"}</div>
-
-<div class="key">Source Phone:</div>
-
-<div class="value">${content.sourcePhone}</div>
-
-<div class="key">HTTP Status:</div>
-
-<div class="value">${responseData.status.http_code} - ${responseData.status.content_type}</div>
-
-<div class="key">Response Time:</div>
-
-<div class="value">${responseData.status.response_time} ms</div>
-
-</div>
-
-`;
-
-document.getElementById("pingResult").innerHTML = resultHtml;
-
-} else {
-
-const errorHtml = `
-
-<div class="result-box">
-
-<div class="error">Ping failed!</div>
-
-<div class="key">Error Status:</div>
-
-<div class="value">${response.status} - ${response.statusText}</div>
-
-</div>
-
-`;
-
-document.getElementById("pingResult").innerHTML = errorHtml;
-
-}
-
-} catch (error) {
-
-const errorHtml = `
-
-<div class="result-box">
-
-<div class="error">Ping failed!</div>
-
-<div class="key">Error Message:</div>
-
-<div class="value">${error.message}</div>
-
-</div>
-
-`;
-
-document.getElementById("pingResult").innerHTML = errorHtml;
-
-}
-
+            // Construct result output
+            const resultHtml = `
+                <div class="result-box">
+                    <div class="success">Ping successful!</div>
+                    <div class="key">Phone Exists:</div>
+                    <div class="value">${content.phoneExists ? "Yes" : "No"}</div>
+                    <div class="key">Source Phone:</div>
+                    <div class="value">${content.sourcePhone}</div>
+                    <div class="key">HTTP Status:</div>
+                    <div class="value">${responseData.status.http_code} - ${responseData.status.content_type}</div>
+                    <div class="key">Response Time:</div>
+                    <div class="value">${responseData.status.response_time} ms</div>
+                </div>
+            `;
+            document.getElementById("pingResult").innerHTML = resultHtml;
+        } else {
+            const errorHtml = `
+                <div class="result-box">
+                    <div class="error">Ping failed!</div>
+                    <div class="key">Error Status:</div>
+                    <div class="value">${response.status} - ${response.statusText}</div>
+                </div>
+            `;
+            document.getElementById("pingResult").innerHTML = errorHtml;
+        }
+    } catch (error) {
+        const errorHtml = `
+            <div class="result-box">
+                <div class="error">Ping failed!</div>
+                <div class="key">Error Message:</div>
+                <div class="value">${error.message}</div>
+            </div>
+        `;
+        document.getElementById("pingResult").innerHTML = errorHtml;
+    }
 }
 
 function toggleJSON() {
-
-const box = document.getElementById("jsonOutput");
-
-box.classList.toggle("hidden");
-
+    const box = document.getElementById("jsonOutput");
+    box.classList.toggle("hidden");
 }
-
 </script>
 
 </body>
-
 </html>
