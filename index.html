@@ -33,7 +33,7 @@
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
 
 <div class="w-full max-w-3xl bg-white shadow-lg rounded-2xl p-8 border border-gray-200">
-    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Partner Web-to-Lead Referral Form</h2>
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Broker Leads Referral Form</h2>
 
     <!-- Ping API Section -->
     <div class="mt-6">
@@ -170,10 +170,19 @@ async function submitLead() {
             "Date_of_Birth": document.getElementById("dob").value,
             "Status": "Awaiting Scheduling",
             "Phone": document.getElementById("phone").value,
+            "MobilePhone": document.getElementById("mobilePhone").value,
+            "Email": document.getElementById("email").value,
+            "Street": document.getElementById("street").value,
+            "City": document.getElementById("city").value,
+            "State": document.getElementById("state").value,
+            "PostalCode": document.getElementById("postalCode").value,
+            "Primary_Insurance_Company": document.getElementById("primaryInsurance").value,
+            "Total_Med_Count": document.getElementById("totalMedCount").value,
             "Episode_ID": "YY321",
             "Scheduling_Status": "Awaiting 1st Patient Contact",
             "Batch_Status": "Unreleased"
         }]
+
     };
 
     document.getElementById("jsonOutput").textContent =
