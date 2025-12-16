@@ -243,7 +243,23 @@ async function pingApi() {
                 <div class="success">Ping completed</div>
 
                 <div class="key">Phone Exists:</div>
-                <div class="value">${body.phoneExists !== undefined ? (body.phoneExists ? "Yes" : "No") : "Unknown"}</div>
+                <div class="value">${
+                    (() => {
+                        // boolean response
+                        if (body === true || body === "true") return "Phone Exists";
+                        if (body === false || body === "false") return "Does Not Exist";
+
+                        // object response
+                        if (typeof body === "object") {
+                            if (body.allowed === false) return "Phone Exists";
+                            if (body.allowed === true) return "Does Not Exist";
+                        }
+
+                        // fallback (should be rare)
+                        return "Does Not Exist";
+                    })()
+                }</div>
+
 
                 <div class="key">Source Phone:</div>
                 <div class="value">${sourcePhone}</div>
