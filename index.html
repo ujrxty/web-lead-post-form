@@ -33,7 +33,7 @@
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
 
 <div class="w-full max-w-3xl bg-white shadow-lg rounded-2xl p-8 border border-gray-200">
-    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Broker Leads Referral Form</h2>
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Referral Form</h2>
 
     <!-- Ping API Section -->
     <div class="mt-6">
@@ -235,24 +235,27 @@ async function pingApi() {
             })
         });
 
-        const rawText = await response.text();
-
-        let content = {};
-        if (rawText) {
-            try {
-                content = JSON.parse(rawText);
-            } catch {
-                content = { message: rawText };
-            }
-        }
+        const result = await response.json();
+        const body = result.body || {};
 
         document.getElementById("pingResult").innerHTML = `
             <div class="result-box">
                 <div class="success">Ping completed</div>
+
+                <div class="key">Phone Exists:</div>
+                <div class="value">${body.phoneExists !== undefined ? (body.phoneExists ? "Yes" : "No") : "Unknown"}</div>
+
                 <div class="key">Source Phone:</div>
                 <div class="value">${sourcePhone}</div>
-                <div class="key">Raw Response:</div>
-                <div class="value">${rawText || "No response body"}</div>
+
+                <div class="key">HTTP Status:</div>
+                <div class="value">${result.http_status}</div>
+
+                <div class="key">Content Type:</div>
+                <div class="value">${result.content_type || "N/A"}</div>
+
+                <div class="key">Response Time:</div>
+                <div class="value">${result.response_time_ms} ms</div>
             </div>
         `;
 
@@ -269,6 +272,7 @@ async function pingApi() {
         pingBtn.innerText = "Ping";
     }
 }
+
 
 </script>
 
