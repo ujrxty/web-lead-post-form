@@ -231,8 +231,9 @@ async function pingApi() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 url: targetUrl,
-                data: {}
+                method: "GET"
             })
+
         });
 
         const result = await response.json();
