@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Broker Leads</title>
+    <title>Partner Web-to-Lead Form</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         .result-box {
@@ -33,7 +33,7 @@
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
 
 <div class="w-full max-w-3xl bg-white shadow-lg rounded-2xl p-8 border border-gray-200">
-    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Broker Leads</h2>
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Partner Web-to-Lead Referral Form</h2>
 
     <!-- Ping API Section -->
     <div class="mt-6">
@@ -122,7 +122,7 @@
 
         <div class="md:col-span-2">
             <label class="font-semibold text-gray-700">List Affiliate Name (Campaign)</label>
-            <input id="listAffiliateName" class="mt-1 p-3 w-full border rounded-lg" type="text" placeholder="Enter Affiliate Name">
+            <input id="listAffiliateName" class="mt-1 p-3 w-full border rounded-lg" type="text">
         </div>
 
         <div class="md:col-span-2">
@@ -141,12 +141,19 @@
 
 <script>
 async function submitLead() {
+    if (isSubmitting) return; // 🔒 block duplicates
+    isSubmitting = true;
+
+    const btn = document.querySelector('button[onclick="submitLead()"]');
+    btn.disabled = true;
+    btn.innerText = "Submitting...";
+
     const payload = {
         "Referral_Source_System": "W2L PROXY",
         "LeadSource": "Phone",
         "RecordTypeId": "012390000006DX3AAM",
         "Referral_Source_Details": "Warm Transfer",
-        "List_Affiliate_Name": document.getElementById("listAffiliateName").value,  // Affiliate name from input
+        "List_Affiliate_Name": document.getElementById("listAffiliateName").value || "N/A",
         "Web_Referrer_Company": "001Pi00005enAmuIAE",
         "Referrals": [{
             "FirstName": document.getElementById("firstName").value,
@@ -155,31 +162,47 @@ async function submitLead() {
             "Date_of_Birth": document.getElementById("dob").value,
             "Status": "Awaiting Scheduling",
             "Phone": document.getElementById("phone").value,
-            "MobilePhone": document.getElementById("mobilePhone").value,
-            "Email": document.getElementById("email").value,
-            "Street": document.getElementById("street").value,
-            "City": document.getElementById("city").value,
-            "State": document.getElementById("state").value,
-            "PostalCode": document.getElementById("postalCode").value,
             "Episode_ID": "YY321",
             "Scheduling_Status": "Awaiting 1st Patient Contact",
-            "Primary_Insurance_Company": document.getElementById("primaryInsurance").value,
-            "Total_Med_Count": document.getElementById("totalMedCount").value,
             "Batch_Status": "Unreleased"
         }]
     };
 
-    document.getElementById("jsonOutput").textContent = JSON.stringify(payload, null, 4);
-
-    // Local proxy for lead submission
-    const proxyUrl = 'https://cors-proxy-jwvg.onrender.com/proxy';
-    const apiUrl = "https://exactcarepharmacy.my.salesforce-sites.com/lead/services/apexrest/v1/LeadApi/";
-
     try {
-        const response = await fetch(proxyUrl, {
+        const response = await fetch("https://cors-proxy-jwvg.onrender.com/proxy", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: apiUrl, data: payload })
+            body: JSON.stringify({
+                url: "https://exactcarepharmacy.my.salesforce-sites.com/lead/services/apexrest/v1/LeadApi/",
+                data: payload
+            })
+        });
+
+        alert("Lead submitted successfully");
+
+    } catch (err) {
+        alert("Submission failed");
+        console.error(err);
+    } finally {
+        isSubmitting = false;
+        btn.disabled = false;
+        btn.innerText = "Submit Lead";
+    }
+}
+
+
+    document.getElementById("jsonOutput").textContent = JSON.stringify(payload, null, 4);
+
+    // CORS proxy for lead submission
+    const corsProxy = 'https://api.allorigins.win/get?url=';
+    const apiUrl = "https://exactcarepharmacy.my.salesforce-sites.com/lead/services/apexrest/v1/LeadApi/";
+    const url = corsProxy + encodeURIComponent(apiUrl);
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
         });
 
         const responseData = await response.json(); // Parse response as JSON
@@ -187,68 +210,72 @@ async function submitLead() {
         if (response.ok) {
             alert("Lead Submitted Successfully!");
         } else {
-            const errorMessage = responseData.error 
-                ? responseData.error || "An error occurred."
+            // Check for specific error messages if available
+            const errorMessage = responseData.contents 
+                ? JSON.parse(responseData.contents).message || "An error occurred."
                 : "An unknown error occurred.";
             alert("Error submitting lead: " + errorMessage);
         }
     } catch (error) {
         alert("Network error: " + error.message);
     }
-}
+
+
+let isPinging = false;
 
 async function pingApi() {
+    if (isPinging) return; // prevent duplicate calls
+    isPinging = true;
+
+    const pingBtn = document.querySelector('button[onclick="pingApi()"]');
+    pingBtn.disabled = true;
+    pingBtn.innerText = "Pinging...";
+
     const partnerName = 'MetzInsurance';
     const token = 'w4qwC60-E964tVzmF-n1KB9Ks1dr5peaaHG215215R2dAzFuiV7Zfg==';
     const sourcePhone = document.getElementById("pingPhone").value;
 
-    const corsProxy = 'https://api.allorigins.win/get?url=';
-    const apiUrl = `https://func-do-not-call.azurewebsites.net/api/v1/do_not_call/${partnerName}/${sourcePhone}?code=${token}`;
-    const url = corsProxy + encodeURIComponent(apiUrl);
+    const targetUrl =
+        `https://func-do-not-call.azurewebsites.net/api/v1/do_not_call/${partnerName}/${sourcePhone}?code=${token}`;
 
     try {
-        const response = await fetch(url);
-        const responseData = await response.json();
-        
-        if (response.ok) {
-            const content = JSON.parse(responseData.contents); // Parse the JSON content
+        const response = await fetch("https://cors-proxy-jwvg.onrender.com/proxy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                url: targetUrl,
+                data: {} // ping endpoint does not require body
+            })
+        });
 
-            // Construct result output
-            const resultHtml = `
-                <div class="result-box">
-                    <div class="success">Ping successful!</div>
-                    <div class="key">Phone Exists:</div>
-                    <div class="value">${content.phoneExists ? "Yes" : "No"}</div>
-                    <div class="key">Source Phone:</div>
-                    <div class="value">${content.sourcePhone}</div>
-                    <div class="key">HTTP Status:</div>
-                    <div class="value">${responseData.status.http_code} - ${responseData.status.content_type}</div>
-                    <div class="key">Response Time:</div>
-                    <div class="value">${responseData.status.response_time} ms</div>
-                </div>
-            `;
-            document.getElementById("pingResult").innerHTML = resultHtml;
-        } else {
-            const errorHtml = `
-                <div class="result-box">
-                    <div class="error">Ping failed!</div>
-                    <div class="key">Error Status:</div>
-                    <div class="value">${response.status} - ${response.statusText}</div>
-                </div>
-            `;
-            document.getElementById("pingResult").innerHTML = errorHtml;
-        }
+        const text = await response.text();
+        const content = JSON.parse(text);
+
+        document.getElementById("pingResult").innerHTML = `
+            <div class="result-box">
+                <div class="success">Ping successful!</div>
+                <div class="key">Phone Exists:</div>
+                <div class="value">${content.phoneExists ? "Yes" : "No"}</div>
+                <div class="key">Source Phone:</div>
+                <div class="value">${content.sourcePhone}</div>
+            </div>
+        `;
+
     } catch (error) {
-        const errorHtml = `
+        document.getElementById("pingResult").innerHTML = `
             <div class="result-box">
                 <div class="error">Ping failed!</div>
                 <div class="key">Error Message:</div>
                 <div class="value">${error.message}</div>
             </div>
         `;
-        document.getElementById("pingResult").innerHTML = errorHtml;
+    } finally {
+        isPinging = false;
+        pingBtn.disabled = false;
+        pingBtn.innerText = "Ping";
     }
 }
+
 
 function toggleJSON() {
     const box = document.getElementById("jsonOutput");
@@ -258,5 +285,3 @@ function toggleJSON() {
 
 </body>
 </html>
-
-
