@@ -226,15 +226,24 @@ async function pingApi() {
             })
         });
 
-        const content = JSON.parse(await response.text());
+        const rawText = await response.text();
+
+        let content = {};
+        if (rawText) {
+            try {
+                content = JSON.parse(rawText);
+            } catch {
+                content = { message: rawText };
+            }
+        }
 
         document.getElementById("pingResult").innerHTML = `
             <div class="result-box">
-                <div class="success">Ping successful!</div>
-                <div class="key">Phone Exists:</div>
-                <div class="value">${content.phoneExists ? "Yes" : "No"}</div>
+                <div class="success">Ping completed</div>
                 <div class="key">Source Phone:</div>
-                <div class="value">${content.sourcePhone}</div>
+                <div class="value">${sourcePhone}</div>
+                <div class="key">Raw Response:</div>
+                <div class="value">${rawText || "No response body"}</div>
             </div>
         `;
 
@@ -251,6 +260,7 @@ async function pingApi() {
         pingBtn.innerText = "Ping";
     }
 }
+
 </script>
 
 
