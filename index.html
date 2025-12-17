@@ -197,7 +197,7 @@ async function submitLead() {
     document.getElementById("jsonOutput").textContent = JSON.stringify(payload, null, 4);
 
     try {
-        await fetch("https://cors-proxy-jwvg.onrender.com", {
+        await fetch("https://cors-proxy-jwvg.onrender.com/proxy", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -241,7 +241,7 @@ async function pingApi() {
         `https://func-do-not-call.azurewebsites.net/api/v1/do_not_call/${partnerName}/${sourcePhone}?code=${token}`;
 
     try {
-        const response = await fetch("https://cors-proxy-jwvg.onrender.com", {
+        const response = await fetch("https://cors-proxy-jwvg.onrender.com/proxy", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
