@@ -155,11 +155,15 @@
 </div>
 
 <script>
+// Lead Management API Base URL - UPDATE THIS WHEN DEPLOYING
+const LEAD_API_BASE = 'http://localhost:8000';
+
 let isSubmitting = false;
 let isPinging = false;
 let leadAlreadySubmitted = false;
 let phoneExistsInDNC = false;
 let pingCompleted = false;
+let phoneAlreadySubmitted = false;
 
 function disableFormFields() {
     const form = document.getElementById("leadForm");
@@ -188,12 +192,58 @@ async function submitLead() {
         return;
     }
 
+    // Prevent submission if phone was already submitted before
+    if (phoneAlreadySubmitted) {
+        alert("This phone number has already been submitted previously. Please refresh the page to submit a different lead.");
+        return;
+    }
+
     // Prevent multiple clicks during submission
     if (isSubmitting) return;
 
     const submitBtn = document.getElementById("submitBtn");
     isSubmitting = true;
     submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner"></span>Checking...';
+
+    // Get form values
+    const formData = {
+        firstName: document.getElementById("firstName").value,
+        lastName: document.getElementById("lastName").value,
+        gender: document.getElementById("gender").value,
+        dob: document.getElementById("dob").value,
+        phone: document.getElementById("phone").value,
+        mobilePhone: document.getElementById("mobilePhone").value,
+        email: document.getElementById("email").value,
+        street: document.getElementById("street").value,
+        city: document.getElementById("city").value,
+        state: document.getElementById("state").value,
+        postalCode: document.getElementById("postalCode").value,
+        primaryInsurance: document.getElementById("primaryInsurance").value,
+        totalMedCount: document.getElementById("totalMedCount").value,
+        listAffiliateName: document.getElementById("listAffiliateName").value
+    };
+
+    // Step 1: Check if phone already exists in our database
+    try {
+        const checkResponse = await fetch(`${LEAD_API_BASE}/api/check/${formData.phone}`);
+        const checkData = await checkResponse.json();
+
+        if (checkData.exists) {
+            phoneAlreadySubmitted = true;
+            alert("This phone number has already been submitted!\n\n" + checkData.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = "Already Submitted";
+            submitBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
+            submitBtn.classList.add("bg-yellow-600");
+            isSubmitting = false;
+            return;
+        }
+    } catch (error) {
+        console.warn("Could not check lead database:", error.message);
+        // Continue with submission even if check fails
+    }
+
     submitBtn.innerHTML = '<span class="spinner"></span>Submitting...';
 
     const payload = {
@@ -201,25 +251,25 @@ async function submitLead() {
         "LeadSource": "Phone",
         "RecordTypeId": "012390000006DX3AAM",
         "Referral_Source_Details": "Warm Transfer",
-        "List_Affiliate_Name": document.getElementById("listAffiliateName").value,  // Affiliate name from input
+        "List_Affiliate_Name": formData.listAffiliateName,
         "Web_Referrer_Company": "001Pi00005enAmuIAE",
         "Referrals": [{
-            "FirstName": document.getElementById("firstName").value,
-            "LastName": document.getElementById("lastName").value,
-            "Gender": document.getElementById("gender").value,
-            "Date_of_Birth": document.getElementById("dob").value,
+            "FirstName": formData.firstName,
+            "LastName": formData.lastName,
+            "Gender": formData.gender,
+            "Date_of_Birth": formData.dob,
             "Status": "Awaiting Scheduling",
-            "Phone": document.getElementById("phone").value,
-            "MobilePhone": document.getElementById("mobilePhone").value,
-            "Email": document.getElementById("email").value,
-            "Street": document.getElementById("street").value,
-            "City": document.getElementById("city").value,
-            "State": document.getElementById("state").value,
-            "PostalCode": document.getElementById("postalCode").value,
+            "Phone": formData.phone,
+            "MobilePhone": formData.mobilePhone,
+            "Email": formData.email,
+            "Street": formData.street,
+            "City": formData.city,
+            "State": formData.state,
+            "PostalCode": formData.postalCode,
             "Episode_ID": "YY321",
             "Scheduling_Status": "Awaiting 1st Patient Contact",
-            "Primary_Insurance_Company": document.getElementById("primaryInsurance").value,
-            "Total_Med_Count": document.getElementById("totalMedCount").value,
+            "Primary_Insurance_Company": formData.primaryInsurance,
+            "Total_Med_Count": formData.totalMedCount,
             "Batch_Status": "Unreleased"
         }]
     };
@@ -237,17 +287,43 @@ async function submitLead() {
             body: JSON.stringify({ url: apiUrl, data: payload })
         });
 
-        const responseData = await response.json(); // Parse response as JSON
+        const responseData = await response.json();
 
         if (response.ok) {
+            // Step 2: Store lead in our database after successful Salesforce submission
+            try {
+                await fetch(`${LEAD_API_BASE}/api/leads`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        first_name: formData.firstName,
+                        last_name: formData.lastName,
+                        gender: formData.gender,
+                        date_of_birth: formData.dob,
+                        phone: formData.phone,
+                        mobile_phone: formData.mobilePhone,
+                        email: formData.email,
+                        street: formData.street,
+                        city: formData.city,
+                        state: formData.state,
+                        postal_code: formData.postalCode,
+                        primary_insurance: formData.primaryInsurance,
+                        total_med_count: formData.totalMedCount ? parseInt(formData.totalMedCount) : null,
+                        list_affiliate_name: formData.listAffiliateName,
+                        salesforce_status: "success"
+                    })
+                });
+            } catch (dbError) {
+                console.warn("Could not store lead in database:", dbError.message);
+            }
+
             leadAlreadySubmitted = true;
             alert("Lead Submitted Successfully!");
-            // Update button to show submitted state but keep it clickable for alert
             submitBtn.disabled = false;
             submitBtn.innerHTML = "Lead Submitted";
             submitBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
             submitBtn.classList.add("bg-green-600");
-            return; // Skip the finally block reset
+            return;
         } else {
             const errorMessage = responseData.error
                 ? responseData.error || "An error occurred."
@@ -258,8 +334,7 @@ async function submitLead() {
         alert("Network error: " + error.message);
     } finally {
         isSubmitting = false;
-        // Only re-enable button if submission failed (not already submitted)
-        if (!leadAlreadySubmitted && !phoneExistsInDNC) {
+        if (!leadAlreadySubmitted && !phoneExistsInDNC && !phoneAlreadySubmitted) {
             submitBtn.disabled = false;
             submitBtn.innerHTML = "Submit Lead";
         }
