@@ -19,3 +19,14 @@ services:
           property: connectionString
       - key: PYTHON_VERSION
         value: "3.11.4"
+
+  - type: web
+    name: lead-form
+    runtime: static
+    plan: free
+    buildCommand: echo "Static site"
+    staticPublishPath: .
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
