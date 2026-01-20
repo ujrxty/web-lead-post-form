@@ -28,6 +28,21 @@
             color: #C62828; /* Red for error messages */
             font-weight: bold; /* Bold text for emphasis */
         }
+        /* Spinner animation */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
@@ -44,7 +59,7 @@
         </div>
 
         <div class="mb-4 text-center">
-            <button onclick="pingApi()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl">Ping</button>
+            <button id="pingBtn" onclick="pingApi()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl disabled:bg-gray-400 disabled:cursor-not-allowed">Ping</button>
         </div>
 
         <div id="pingResult" class="text-center text-gray-700"></div>
@@ -126,7 +141,7 @@
         </div>
 
         <div class="md:col-span-2">
-            <button type="button" onclick="submitLead()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-lg font-semibold shadow-md">Submit Lead</button>
+            <button id="submitBtn" type="button" onclick="submitLead()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-lg font-semibold shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed">Submit Lead</button>
         </div>
     </form>
 
@@ -140,7 +155,47 @@
 </div>
 
 <script>
+let isSubmitting = false;
+let isPinging = false;
+let leadAlreadySubmitted = false;
+let phoneExistsInDNC = false;
+let pingCompleted = false;
+
+function disableFormFields() {
+    const form = document.getElementById("leadForm");
+    const inputs = form.querySelectorAll("input, select");
+    inputs.forEach(input => {
+        input.disabled = true;
+        input.classList.add("bg-gray-200", "cursor-not-allowed");
+    });
+    const submitBtn = document.getElementById("submitBtn");
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = "Blocked - Phone on Do Not Call List";
+    submitBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
+    submitBtn.classList.add("bg-red-600");
+}
+
 async function submitLead() {
+    // Prevent submission if phone is on do-not-call list
+    if (phoneExistsInDNC) {
+        alert("Cannot submit lead. Phone number is on the Do Not Call list.");
+        return;
+    }
+
+    // Prevent resubmission if lead was already submitted
+    if (leadAlreadySubmitted) {
+        alert("Lead has already been submitted. Please refresh the page to submit a new lead.");
+        return;
+    }
+
+    // Prevent multiple clicks during submission
+    if (isSubmitting) return;
+
+    const submitBtn = document.getElementById("submitBtn");
+    isSubmitting = true;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner"></span>Submitting...';
+
     const payload = {
         "Referral_Source_System": "W2L PROXY",
         "LeadSource": "Phone",
@@ -185,19 +240,51 @@ async function submitLead() {
         const responseData = await response.json(); // Parse response as JSON
 
         if (response.ok) {
+            leadAlreadySubmitted = true;
             alert("Lead Submitted Successfully!");
+            // Update button to show submitted state but keep it clickable for alert
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = "Lead Submitted";
+            submitBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
+            submitBtn.classList.add("bg-green-600");
+            return; // Skip the finally block reset
         } else {
-            const errorMessage = responseData.error 
+            const errorMessage = responseData.error
                 ? responseData.error || "An error occurred."
                 : "An unknown error occurred.";
             alert("Error submitting lead: " + errorMessage);
         }
     } catch (error) {
         alert("Network error: " + error.message);
+    } finally {
+        isSubmitting = false;
+        // Only re-enable button if submission failed (not already submitted)
+        if (!leadAlreadySubmitted && !phoneExistsInDNC) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = "Submit Lead";
+        }
     }
 }
 
 async function pingApi() {
+    // Prevent re-ping after successful ping
+    if (pingCompleted) {
+        if (phoneExistsInDNC) {
+            alert("Phone is on Do Not Call list. Form is blocked. Refresh the page to check a different number.");
+        } else {
+            alert("Phone has already been verified as safe. Refresh the page to check a different number.");
+        }
+        return;
+    }
+
+    // Prevent multiple pings
+    if (isPinging) return;
+
+    const pingBtn = document.getElementById("pingBtn");
+    isPinging = true;
+    pingBtn.disabled = true;
+    pingBtn.innerHTML = '<span class="spinner"></span>Pinging...';
+
     const partnerName = 'MetzInsurance';
     const token = 'w4qwC60-E964tVzmF-n1KB9Ks1dr5peaaHG215215R2dAzFuiV7Zfg==';
     const sourcePhone = document.getElementById("pingPhone").value;
@@ -209,22 +296,32 @@ async function pingApi() {
     try {
         const response = await fetch(url);
         const responseData = await response.json();
-        
+
         if (response.ok) {
             const content = JSON.parse(responseData.contents); // Parse the JSON content
+
+            // Mark ping as completed
+            pingCompleted = true;
+
+            // Check if phone exists in do-not-call list
+            if (content.phoneExists) {
+                phoneExistsInDNC = true;
+                disableFormFields();
+            }
 
             // Construct result output
             const resultHtml = `
                 <div class="result-box">
-                    <div class="success">Ping successful!</div>
+                    <div class="${content.phoneExists ? 'error' : 'success'}">Ping successful!</div>
                     <div class="key">Phone Exists:</div>
-                    <div class="value">${content.phoneExists ? "Yes" : "No"}</div>
+                    <div class="value ${content.phoneExists ? 'error' : 'success'}">${content.phoneExists ? "Yes - DO NOT CALL" : "No - Safe to call"}</div>
                     <div class="key">Source Phone:</div>
                     <div class="value">${content.sourcePhone}</div>
                     <div class="key">HTTP Status:</div>
                     <div class="value">${responseData.status.http_code} - ${responseData.status.content_type}</div>
                     <div class="key">Response Time:</div>
                     <div class="value">${responseData.status.response_time} ms</div>
+                    ${content.phoneExists ? '<div class="error mt-2">Form has been disabled. This phone number is on the Do Not Call list.</div>' : ''}
                 </div>
             `;
             document.getElementById("pingResult").innerHTML = resultHtml;
@@ -247,6 +344,25 @@ async function pingApi() {
             </div>
         `;
         document.getElementById("pingResult").innerHTML = errorHtml;
+    } finally {
+        // Re-enable button after ping completes
+        isPinging = false;
+        pingBtn.disabled = false;
+
+        // Update button based on result
+        if (pingCompleted) {
+            if (phoneExistsInDNC) {
+                pingBtn.innerHTML = "Blocked";
+                pingBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
+                pingBtn.classList.add("bg-red-600", "hover:bg-red-700");
+            } else {
+                pingBtn.innerHTML = "Verified ✓";
+                pingBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
+                pingBtn.classList.add("bg-green-600", "hover:bg-green-700");
+            }
+        } else {
+            pingBtn.innerHTML = "Ping";
+        }
     }
 }
 
