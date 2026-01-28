@@ -444,7 +444,7 @@
 
             <div class="p-8 space-y-8">
                 <!-- Stats -->
-                <div class="grid grid-cols-4 gap-4">
+                <div class="grid grid-cols-5 gap-4">
                     <div class="card p-6 relative overflow-hidden">
                         <div class="stat-accent"></div>
                         <div class="flex items-center justify-between">
@@ -497,8 +497,23 @@
                     <div class="card p-6">
                         <div class="flex items-center justify-between">
                             <div>
+                                <p class="text-sm text-zinc-500 font-medium">Today</p>
+                                <p id="dailyLeads" class="text-3xl font-semibold mt-2 counter text-cyan-400">0</p>
+                                <p class="text-xs text-zinc-600 mt-2">Last 24 hours</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
                                 <p class="text-sm text-zinc-500 font-medium">This Week</p>
-                                <p id="weeklyLeads" class="text-3xl font-semibold mt-2 counter">0</p>
+                                <p id="weeklyLeads" class="text-3xl font-semibold mt-2 counter text-violet-400">0</p>
                                 <p class="text-xs text-zinc-600 mt-2">Last 7 days</p>
                             </div>
                             <div class="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center">
@@ -774,8 +789,9 @@
                 document.getElementById('tabSignedUpCount').textContent = stats.signed_up_leads || 0;
                 document.getElementById('tabCallbackCount').textContent = stats.callback_scheduled_leads || 0;
 
-                // Calculate weekly (mock for now - would need backend support)
-                document.getElementById('weeklyLeads').textContent = stats.total_leads;
+                // Update daily and weekly stats
+                animateValue(document.getElementById('dailyLeads'), stats.daily_leads || 0);
+                animateValue(document.getElementById('weeklyLeads'), stats.weekly_leads || 0);
             } catch (error) {
                 console.error('Error:', error);
             }

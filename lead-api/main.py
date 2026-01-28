@@ -344,18 +344,30 @@ def export_leads_csv(
 @app.get("/api/stats")
 def get_stats(db: Session = Depends(get_db)):
     """Get statistics about leads"""
+    from datetime import timedelta
+
     total_leads = db.query(Lead).count()
     successful_leads = db.query(Lead).filter(Lead.salesforce_status == "success").count()
     failed_leads = db.query(Lead).filter(Lead.salesforce_status == "failed").count()
     signed_up_leads = db.query(Lead).filter(Lead.signed_up == True).count()
     callback_scheduled_leads = db.query(Lead).filter(Lead.callback_scheduled == True).count()
 
+    # Daily stats (today)
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    daily_leads = db.query(Lead).filter(Lead.submitted_at >= today_start).count()
+
+    # Weekly stats (last 7 days)
+    week_start = today_start - timedelta(days=7)
+    weekly_leads = db.query(Lead).filter(Lead.submitted_at >= week_start).count()
+
     return {
         "total_leads": total_leads,
         "successful_leads": successful_leads,
         "failed_leads": failed_leads,
         "signed_up_leads": signed_up_leads,
-        "callback_scheduled_leads": callback_scheduled_leads
+        "callback_scheduled_leads": callback_scheduled_leads,
+        "daily_leads": daily_leads,
+        "weekly_leads": weekly_leads
     }
 
 
