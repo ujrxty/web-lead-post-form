@@ -269,6 +269,29 @@
             border: 1px solid rgba(245, 158, 11, 0.2);
         }
 
+        /* Active button states */
+        .btn-signed-up-active {
+            background: rgba(147, 51, 234, 0.15);
+            color: #a855f7;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+        }
+
+        .btn-signed-up-active:hover {
+            background: rgba(147, 51, 234, 0.25);
+            border-color: rgba(147, 51, 234, 0.4);
+        }
+
+        .btn-callback-active {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-callback-active:hover {
+            background: rgba(245, 158, 11, 0.25);
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+
         /* Pagination */
         .pagination-btn {
             background: rgba(255, 255, 255, 0.03);
@@ -1028,11 +1051,11 @@
             const btnText = document.getElementById('signupBtnText');
 
             if (isSignedUp) {
-                btn.classList.add('status-signed-up');
+                btn.classList.add('btn-signed-up-active');
                 btn.classList.remove('btn-secondary');
                 btnText.textContent = 'Unmark Signed Up';
             } else {
-                btn.classList.remove('status-signed-up');
+                btn.classList.remove('btn-signed-up-active');
                 btn.classList.add('btn-secondary');
                 btnText.textContent = 'Mark as Signed Up';
             }
@@ -1070,11 +1093,11 @@
             const btnText = document.getElementById('callbackBtnText');
 
             if (isCallback) {
-                btn.classList.add('status-callback');
+                btn.classList.add('btn-callback-active');
                 btn.classList.remove('btn-secondary');
                 btnText.textContent = 'Unmark Callback';
             } else {
-                btn.classList.remove('status-callback');
+                btn.classList.remove('btn-callback-active');
                 btn.classList.add('btn-secondary');
                 btnText.textContent = 'Callback Scheduled';
             }
