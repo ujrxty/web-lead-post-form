@@ -79,6 +79,8 @@ class LeadResponse(BaseModel):
     list_affiliate_name: Optional[str]
     submitted_at: datetime
     salesforce_status: Optional[str]
+    signed_up: Optional[bool] = False
+    signed_up_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -152,14 +154,17 @@ def create_lead(lead: LeadCreate, db: Session = Depends(get_db)):
     return db_lead
 
 
-@app.get("/api/leads", response_model=list[LeadResponse])
+@app.get("/api/leads")
 def get_leads(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     search: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    signed_up: Optional[bool] = None,
     db: Session = Depends(get_db)
 ):
-    """Get all leads with optional pagination and search"""
+    """Get all leads with optional pagination, search, date range, and signed_up filter"""
     query = db.query(Lead)
 
     # Apply search filter if provided
@@ -172,10 +177,39 @@ def get_leads(
             (Lead.email.like(search_term))
         )
 
+    # Apply date range filter
+    if start_date:
+        try:
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(Lead.submitted_at >= start)
+        except ValueError:
+            pass
+
+    if end_date:
+        try:
+            end = datetime.strptime(end_date, "%Y-%m-%d")
+            # Include the entire end date day
+            end = end.replace(hour=23, minute=59, second=59)
+            query = query.filter(Lead.submitted_at <= end)
+        except ValueError:
+            pass
+
+    # Apply signed_up filter
+    if signed_up is not None:
+        query = query.filter(Lead.signed_up == signed_up)
+
+    # Get total count before pagination
+    total = query.count()
+
     # Order by newest first and apply pagination
     leads = query.order_by(desc(Lead.submitted_at)).offset(skip).limit(limit).all()
 
-    return leads
+    return {
+        "leads": [LeadResponse.model_validate(lead) for lead in leads],
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 
 @app.get("/api/leads/{lead_id}", response_model=LeadResponse)
@@ -203,10 +237,41 @@ def delete_lead(lead_id: int, db: Session = Depends(get_db)):
     return {"message": "Lead deleted successfully", "id": lead_id}
 
 
+@app.patch("/api/leads/{lead_id}/signup")
+def toggle_signup(lead_id: int, db: Session = Depends(get_db)):
+    """Toggle the signed_up status of a lead"""
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    # Toggle the signed_up status
+    lead.signed_up = not lead.signed_up
+    lead.signed_up_at = datetime.utcnow() if lead.signed_up else None
+
+    db.commit()
+    db.refresh(lead)
+
+    return {
+        "message": f"Lead {'marked as signed up' if lead.signed_up else 'unmarked as signed up'}",
+        "id": lead_id,
+        "signed_up": lead.signed_up,
+        "signed_up_at": lead.signed_up_at.isoformat() if lead.signed_up_at else None
+    }
+
+
 @app.get("/api/leads/export/csv")
-def export_leads_csv(db: Session = Depends(get_db)):
-    """Export all leads as CSV"""
-    leads = db.query(Lead).order_by(desc(Lead.submitted_at)).all()
+def export_leads_csv(
+    signed_up: Optional[bool] = None,
+    db: Session = Depends(get_db)
+):
+    """Export leads as CSV with optional signed_up filter"""
+    query = db.query(Lead)
+
+    if signed_up is not None:
+        query = query.filter(Lead.signed_up == signed_up)
+
+    leads = query.order_by(desc(Lead.submitted_at)).all()
 
     # Create CSV in memory
     output = io.StringIO()
@@ -217,7 +282,8 @@ def export_leads_csv(db: Session = Depends(get_db)):
         "ID", "First Name", "Last Name", "Gender", "Date of Birth",
         "Phone", "Mobile Phone", "Email", "Street", "City", "State",
         "Postal Code", "Primary Insurance", "Total Med Count",
-        "List Affiliate Name", "Submitted At", "Salesforce Status"
+        "List Affiliate Name", "Submitted At", "Salesforce Status",
+        "Signed Up", "Signed Up At"
     ])
 
     # Write data
@@ -229,7 +295,9 @@ def export_leads_csv(db: Session = Depends(get_db)):
             lead.primary_insurance, lead.total_med_count,
             lead.list_affiliate_name,
             lead.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if lead.submitted_at else "",
-            lead.salesforce_status
+            lead.salesforce_status,
+            "Yes" if lead.signed_up else "No",
+            lead.signed_up_at.strftime('%Y-%m-%d %H:%M:%S') if lead.signed_up_at else ""
         ])
 
     output.seek(0)
@@ -247,11 +315,13 @@ def get_stats(db: Session = Depends(get_db)):
     total_leads = db.query(Lead).count()
     successful_leads = db.query(Lead).filter(Lead.salesforce_status == "success").count()
     failed_leads = db.query(Lead).filter(Lead.salesforce_status == "failed").count()
+    signed_up_leads = db.query(Lead).filter(Lead.signed_up == True).count()
 
     return {
         "total_leads": total_leads,
         "successful_leads": successful_leads,
-        "failed_leads": failed_leads
+        "failed_leads": failed_leads,
+        "signed_up_leads": signed_up_leads
     }
 
 

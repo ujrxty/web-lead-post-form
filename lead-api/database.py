@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -45,11 +45,53 @@ class Lead(Base):
     list_affiliate_name = Column(String(255), nullable=True)
     submitted_at = Column(DateTime, default=datetime.utcnow)
     salesforce_status = Column(String(50), default="success")
+    signed_up = Column(Boolean, default=False)
+    signed_up_at = Column(DateTime, nullable=True)
 
 
 def create_tables():
     """Create all tables in the database"""
     Base.metadata.create_all(bind=engine)
+
+    # Run migrations for new columns on existing tables
+    run_migrations()
+
+
+def run_migrations():
+    """Add new columns to existing tables if they don't exist"""
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+
+    # Check if leads table exists
+    if 'leads' not in inspector.get_table_names():
+        return
+
+    # Get existing columns
+    existing_columns = [col['name'] for col in inspector.get_columns('leads')]
+
+    # Define new columns to add
+    new_columns = []
+
+    if 'signed_up' not in existing_columns:
+        if DATABASE_URL.startswith("sqlite"):
+            new_columns.append("ALTER TABLE leads ADD COLUMN signed_up BOOLEAN DEFAULT 0")
+        else:
+            new_columns.append("ALTER TABLE leads ADD COLUMN signed_up BOOLEAN DEFAULT FALSE")
+
+    if 'signed_up_at' not in existing_columns:
+        new_columns.append("ALTER TABLE leads ADD COLUMN signed_up_at TIMESTAMP NULL")
+
+    # Execute migrations
+    if new_columns:
+        with engine.connect() as conn:
+            for sql in new_columns:
+                try:
+                    conn.execute(text(sql))
+                    conn.commit()
+                    print(f"Migration executed: {sql}")
+                except Exception as e:
+                    print(f"Migration skipped (may already exist): {e}")
 
 
 def get_db():
