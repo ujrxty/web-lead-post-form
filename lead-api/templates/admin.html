@@ -262,6 +262,13 @@
             border: 1px solid rgba(147, 51, 234, 0.2);
         }
 
+        /* Callback scheduled badge */
+        .status-callback {
+            background: rgba(245, 158, 11, 0.1);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
         /* Pagination */
         .pagination-btn {
             background: rgba(255, 255, 255, 0.03);
@@ -489,6 +496,10 @@
                                 Signed Up
                                 <span id="tabSignedUpCount" class="ml-2 text-xs bg-white/10 px-2 py-0.5 rounded-full">0</span>
                             </button>
+                            <button id="tabCallback" onclick="switchTab('callback')" class="tab-btn px-6 py-3 text-sm font-medium text-zinc-500 border-b-2 border-transparent hover:text-zinc-300 transition-colors">
+                                Callback Scheduled
+                                <span id="tabCallbackCount" class="ml-2 text-xs bg-white/10 px-2 py-0.5 rounded-full">0</span>
+                            </button>
                         </div>
                     </div>
 
@@ -620,6 +631,12 @@
                         Delete lead
                     </button>
                     <div class="flex items-center gap-3">
+                        <button id="callbackBtn" onclick="toggleCallback()" class="btn-secondary flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                            </svg>
+                            <span id="callbackBtnText">Callback Scheduled</span>
+                        </button>
                         <button id="signupBtn" onclick="toggleSignup()" class="btn-secondary flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -726,6 +743,7 @@
                 // Update tab counts
                 document.getElementById('tabAllCount').textContent = stats.total_leads;
                 document.getElementById('tabSignedUpCount').textContent = stats.signed_up_leads || 0;
+                document.getElementById('tabCallbackCount').textContent = stats.callback_scheduled_leads || 0;
 
                 // Calculate weekly (mock for now - would need backend support)
                 document.getElementById('weeklyLeads').textContent = stats.total_leads;
@@ -761,6 +779,8 @@
 
                 if (currentTab === 'signed_up') {
                     url += `&signed_up=true`;
+                } else if (currentTab === 'callback') {
+                    url += `&callback_scheduled=true`;
                 }
 
                 const response = await fetch(url);
@@ -861,6 +881,8 @@
             document.getElementById('tabAll').classList.toggle('text-zinc-500', tab !== 'all');
             document.getElementById('tabSignedUp').classList.toggle('tab-active', tab === 'signed_up');
             document.getElementById('tabSignedUp').classList.toggle('text-zinc-500', tab !== 'signed_up');
+            document.getElementById('tabCallback').classList.toggle('tab-active', tab === 'callback');
+            document.getElementById('tabCallback').classList.toggle('text-zinc-500', tab !== 'callback');
 
             loadLeads();
         }
@@ -888,6 +910,7 @@
             const location = [lead.city, lead.state].filter(Boolean).join(', ') || '—';
             const isSuccess = lead.salesforce_status === 'success';
             const isSignedUp = lead.signed_up;
+            const isCallback = lead.callback_scheduled;
 
             tr.innerHTML = `
                 <td class="px-6 py-4">
@@ -909,10 +932,11 @@
                     <p class="text-sm text-zinc-400">${location}</p>
                 </td>
                 <td class="px-6 py-4">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
                         <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${isSuccess ? 'status-success' : 'status-failed'}">
                             ${isSuccess ? 'Success' : 'Failed'}
                         </span>
+                        ${isCallback ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium status-callback">Callback</span>' : ''}
                         ${isSignedUp ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium status-signed-up">Signed Up</span>' : ''}
                     </div>
                 </td>
@@ -944,8 +968,9 @@
             const date = new Date(lead.submitted_at);
             const formattedDate = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-            // Update signup button state
+            // Update signup and callback button states
             updateSignupButton(lead.signed_up);
+            updateCallbackButton(lead.callback_scheduled);
 
             document.getElementById('modalContent').innerHTML = `
                 <div class="space-y-6">
@@ -956,7 +981,10 @@
                         <div>
                             <h3 class="text-lg font-semibold">${lead.first_name} ${lead.last_name}</h3>
                             <p class="text-sm text-zinc-500">${formattedDate}</p>
-                            ${lead.signed_up ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium status-signed-up mt-1">Signed Up</span>' : ''}
+                            <div class="flex gap-2 mt-1">
+                                ${lead.callback_scheduled ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium status-callback">Callback Scheduled</span>' : ''}
+                                ${lead.signed_up ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium status-signed-up">Signed Up</span>' : ''}
+                            </div>
                         </div>
                     </div>
 
@@ -1031,6 +1059,48 @@
                 loadLeads();
             } catch (error) {
                 console.error('Error toggling signup:', error);
+                alert('Error updating lead status');
+            }
+        }
+
+        function updateCallbackButton(isCallback) {
+            const btn = document.getElementById('callbackBtn');
+            const btnText = document.getElementById('callbackBtnText');
+
+            if (isCallback) {
+                btn.classList.add('status-callback');
+                btn.classList.remove('btn-secondary');
+                btnText.textContent = 'Unmark Callback';
+            } else {
+                btn.classList.remove('status-callback');
+                btn.classList.add('btn-secondary');
+                btnText.textContent = 'Callback Scheduled';
+            }
+        }
+
+        async function toggleCallback() {
+            if (!currentLeadId) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/leads/${currentLeadId}/callback`, {
+                    method: 'PATCH'
+                });
+                const data = await response.json();
+
+                // Update the current lead in memory
+                if (currentLead) {
+                    currentLead.callback_scheduled = data.callback_scheduled;
+                    currentLead.callback_scheduled_at = data.callback_scheduled_at;
+                }
+
+                // Update the button state
+                updateCallbackButton(data.callback_scheduled);
+
+                // Refresh the leads list and stats
+                loadStats();
+                loadLeads();
+            } catch (error) {
+                console.error('Error toggling callback:', error);
                 alert('Error updating lead status');
             }
         }

@@ -47,6 +47,8 @@ class Lead(Base):
     salesforce_status = Column(String(50), default="success")
     signed_up = Column(Boolean, default=False)
     signed_up_at = Column(DateTime, nullable=True)
+    callback_scheduled = Column(Boolean, default=False)
+    callback_scheduled_at = Column(DateTime, nullable=True)
 
 
 def create_tables():
@@ -81,6 +83,15 @@ def run_migrations():
 
     if 'signed_up_at' not in existing_columns:
         new_columns.append("ALTER TABLE leads ADD COLUMN signed_up_at TIMESTAMP NULL")
+
+    if 'callback_scheduled' not in existing_columns:
+        if DATABASE_URL.startswith("sqlite"):
+            new_columns.append("ALTER TABLE leads ADD COLUMN callback_scheduled BOOLEAN DEFAULT 0")
+        else:
+            new_columns.append("ALTER TABLE leads ADD COLUMN callback_scheduled BOOLEAN DEFAULT FALSE")
+
+    if 'callback_scheduled_at' not in existing_columns:
+        new_columns.append("ALTER TABLE leads ADD COLUMN callback_scheduled_at TIMESTAMP NULL")
 
     # Execute migrations
     if new_columns:

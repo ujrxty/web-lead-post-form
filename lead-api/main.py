@@ -81,6 +81,8 @@ class LeadResponse(BaseModel):
     salesforce_status: Optional[str]
     signed_up: Optional[bool] = False
     signed_up_at: Optional[datetime] = None
+    callback_scheduled: Optional[bool] = False
+    callback_scheduled_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -162,9 +164,10 @@ def get_leads(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     signed_up: Optional[bool] = None,
+    callback_scheduled: Optional[bool] = None,
     db: Session = Depends(get_db)
 ):
-    """Get all leads with optional pagination, search, date range, and signed_up filter"""
+    """Get all leads with optional pagination, search, date range, signed_up, and callback_scheduled filter"""
     query = db.query(Lead)
 
     # Apply search filter if provided
@@ -197,6 +200,10 @@ def get_leads(
     # Apply signed_up filter
     if signed_up is not None:
         query = query.filter(Lead.signed_up == signed_up)
+
+    # Apply callback_scheduled filter
+    if callback_scheduled is not None:
+        query = query.filter(Lead.callback_scheduled == callback_scheduled)
 
     # Get total count before pagination
     total = query.count()
@@ -260,6 +267,29 @@ def toggle_signup(lead_id: int, db: Session = Depends(get_db)):
     }
 
 
+@app.patch("/api/leads/{lead_id}/callback")
+def toggle_callback(lead_id: int, db: Session = Depends(get_db)):
+    """Toggle the callback_scheduled status of a lead"""
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    # Toggle the callback_scheduled status
+    lead.callback_scheduled = not lead.callback_scheduled
+    lead.callback_scheduled_at = datetime.utcnow() if lead.callback_scheduled else None
+
+    db.commit()
+    db.refresh(lead)
+
+    return {
+        "message": f"Lead {'marked as callback scheduled' if lead.callback_scheduled else 'unmarked as callback scheduled'}",
+        "id": lead_id,
+        "callback_scheduled": lead.callback_scheduled,
+        "callback_scheduled_at": lead.callback_scheduled_at.isoformat() if lead.callback_scheduled_at else None
+    }
+
+
 @app.get("/api/leads/export/csv")
 def export_leads_csv(
     signed_up: Optional[bool] = None,
@@ -283,7 +313,7 @@ def export_leads_csv(
         "Phone", "Mobile Phone", "Email", "Street", "City", "State",
         "Postal Code", "Primary Insurance", "Total Med Count",
         "List Affiliate Name", "Submitted At", "Salesforce Status",
-        "Signed Up", "Signed Up At"
+        "Signed Up", "Signed Up At", "Callback Scheduled", "Callback Scheduled At"
     ])
 
     # Write data
@@ -297,7 +327,9 @@ def export_leads_csv(
             lead.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if lead.submitted_at else "",
             lead.salesforce_status,
             "Yes" if lead.signed_up else "No",
-            lead.signed_up_at.strftime('%Y-%m-%d %H:%M:%S') if lead.signed_up_at else ""
+            lead.signed_up_at.strftime('%Y-%m-%d %H:%M:%S') if lead.signed_up_at else "",
+            "Yes" if lead.callback_scheduled else "No",
+            lead.callback_scheduled_at.strftime('%Y-%m-%d %H:%M:%S') if lead.callback_scheduled_at else ""
         ])
 
     output.seek(0)
@@ -316,12 +348,14 @@ def get_stats(db: Session = Depends(get_db)):
     successful_leads = db.query(Lead).filter(Lead.salesforce_status == "success").count()
     failed_leads = db.query(Lead).filter(Lead.salesforce_status == "failed").count()
     signed_up_leads = db.query(Lead).filter(Lead.signed_up == True).count()
+    callback_scheduled_leads = db.query(Lead).filter(Lead.callback_scheduled == True).count()
 
     return {
         "total_leads": total_leads,
         "successful_leads": successful_leads,
         "failed_leads": failed_leads,
-        "signed_up_leads": signed_up_leads
+        "signed_up_leads": signed_up_leads,
+        "callback_scheduled_leads": callback_scheduled_leads
     }
 
 
