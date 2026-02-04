@@ -47,7 +47,25 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
 
-<div class="w-full max-w-3xl bg-white shadow-lg rounded-2xl p-8 border border-gray-200">
+<!-- Password Protection Screen -->
+<div id="passwordScreen" class="w-full max-w-md bg-white shadow-lg rounded-2xl p-8 border border-gray-200">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Password Required</h2>
+    <p class="text-gray-600 mb-6 text-center">Please enter the password to access the form.</p>
+    
+    <div class="mb-6">
+        <label class="font-semibold text-gray-700 block mb-2">Password</label>
+        <input id="passwordInput" class="mt-1 p-3 w-full border rounded-lg" type="password" placeholder="Enter password" onkeypress="if(event.key === 'Enter') checkPassword()">
+    </div>
+    
+    <div class="text-center">
+        <button onclick="checkPassword()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold">Access Form</button>
+    </div>
+    
+    <div id="passwordError" class="mt-4 text-center text-red-600 hidden">Incorrect password. Please try again.</div>
+</div>
+
+<!-- Main Form (Hidden until password is correct) -->
+<div id="mainContent" class="w-full max-w-3xl bg-white shadow-lg rounded-2xl p-8 border border-gray-200 hidden">
     <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Partner Web-to-Lead Referral Form</h2>
 
     <!-- Ping API Section -->
@@ -155,6 +173,41 @@
 </div>
 
 <script>
+// Password for accessing the form (change this to your desired password)
+const CORRECT_PASSWORD = 'Godisgreat143@';
+
+function checkPassword() {
+    const password = document.getElementById('passwordInput').value;
+    const passwordError = document.getElementById('passwordError');
+    
+    if (password === CORRECT_PASSWORD) {
+        // Store authentication in sessionStorage
+        sessionStorage.setItem('authenticated', 'true');
+        // Hide password screen and show main content
+        document.getElementById('passwordScreen').classList.add('hidden');
+        document.getElementById('mainContent').classList.remove('hidden');
+        passwordError.classList.add('hidden');
+    } else {
+        // Show error message
+        passwordError.classList.remove('hidden');
+        // Clear the password field
+        document.getElementById('passwordInput').value = '';
+        // Focus back on password field
+        document.getElementById('passwordInput').focus();
+    }
+}
+
+function checkAuthentication() {
+    // Check if user is already authenticated in this session
+    if (sessionStorage.getItem('authenticated') === 'true') {
+        document.getElementById('passwordScreen').classList.add('hidden');
+        document.getElementById('mainContent').classList.remove('hidden');
+    }
+}
+
+// Check authentication when page loads
+checkAuthentication();
+
 // Lead Management API Base URL
 const LEAD_API_BASE = 'https://lead-api-quig.onrender.com';
 
