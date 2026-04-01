@@ -1,7 +1,7 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-pydantic
-jinja2
-python-multipart
-psycopg2-binary
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+sqlalchemy==2.0.36
+pydantic[email]==2.9.2
+jinja2==3.1.4
+python-multipart==0.0.12
+psycopg2-binary==2.9.10
