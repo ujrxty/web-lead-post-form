@@ -10,9 +10,6 @@ from typing import Optional
 from datetime import datetime
 import csv
 import io
-import json
-import urllib.request
-import urllib.error
 from fastapi.responses import StreamingResponse
 
 from database import get_db, Lead, create_tables
@@ -97,48 +94,6 @@ class CheckResponse(BaseModel):
 
 
 # API Endpoints
-
-DNC_PARTNER_NAME = "MetzInsurance"
-DNC_TOKEN = "w4qwC60-E964tVzmF-n1KB9Ks1dr5peaaHG215215R2dAzFuiV7Zfg=="
-DNC_BASE_URL = "https://func-do-not-call.azurewebsites.net/api/v1/do_not_call"
-
-
-@app.get("/api/ping/{phone}")
-def ping_do_not_call(phone: str):
-    """Server-side proxy to the Do-Not-Call API.
-
-    Replaces the previous client-side allorigins.win CORS proxy, which was
-    unreliable and frequently produced "Ping failed" errors.
-    """
-    clean_phone = ''.join(filter(str.isdigit, phone))
-    if not clean_phone:
-        raise HTTPException(status_code=400, detail="Invalid phone number")
-
-    url = f"{DNC_BASE_URL}/{DNC_PARTNER_NAME}/{clean_phone}?code={DNC_TOKEN}"
-
-    last_error = None
-    # Retry a couple of times in case of transient network blips.
-    for attempt in range(3):
-        try:
-            req = urllib.request.Request(url, headers={"Accept": "application/json"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                body = resp.read().decode("utf-8")
-                try:
-                    return json.loads(body)
-                except json.JSONDecodeError:
-                    return {"raw": body}
-        except urllib.error.HTTPError as e:
-            # Non-2xx from upstream: surface status, don't retry on 4xx.
-            if 400 <= e.code < 500:
-                raise HTTPException(status_code=e.code, detail=f"DNC API error: {e.reason}")
-            last_error = f"{e.code} {e.reason}"
-        except urllib.error.URLError as e:
-            last_error = str(e.reason)
-        except Exception as e:
-            last_error = str(e)
-
-    raise HTTPException(status_code=502, detail=f"DNC API unreachable: {last_error}")
-
 
 @app.get("/api/check/{phone}", response_model=CheckResponse)
 def check_phone(phone: str, db: Session = Depends(get_db)):

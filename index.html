@@ -413,19 +413,67 @@ async function pingApi() {
     pingBtn.disabled = true;
     pingBtn.innerHTML = '<span class="spinner"></span>Pinging...';
 
+    const partnerName = 'MetzInsurance';
+    const token = 'w4qwC60-E964tVzmF-n1KB9Ks1dr5peaaHG215215R2dAzFuiV7Zfg==';
     const sourcePhone = document.getElementById("pingPhone").value;
+    const apiUrl = `https://func-do-not-call.azurewebsites.net/api/v1/do_not_call/${partnerName}/${sourcePhone}?code=${token}`;
 
-    // Call our own backend, which proxies to the DNC API.
-    // This avoids the unreliable third-party allorigins.win CORS proxy.
-    const url = `${LEAD_API_BASE}/api/ping/${encodeURIComponent(sourcePhone)}`;
+    // Try a list of CORS proxies in order. If one fails or times out, fall
+    // back to the next. allorigins.win was the only one before and it's
+    // notoriously flaky — adding fallbacks fixes the "Ping failed" issue
+    // without needing any backend changes.
+    const proxies = [
+        {
+            url: `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`,
+            parse: async (r) => await r.json(),
+        },
+        {
+            url: `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(apiUrl)}`,
+            parse: async (r) => await r.json(),
+        },
+        {
+            url: `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`,
+            parse: async (r) => await r.json(),
+        },
+        {
+            url: `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`,
+            parse: async (r) => {
+                const data = await r.json();
+                return JSON.parse(data.contents);
+            },
+        },
+    ];
+
+    const fetchWithTimeout = (u, ms = 8000) => {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), ms);
+        return fetch(u, { signal: ctrl.signal }).finally(() => clearTimeout(t));
+    };
 
     const startTime = Date.now();
+    let content = null;
+    let lastError = null;
+
+    for (const proxy of proxies) {
+        try {
+            const response = await fetchWithTimeout(proxy.url, 8000);
+            if (!response.ok) {
+                lastError = `${response.status} ${response.statusText}`;
+                continue;
+            }
+            content = await proxy.parse(response);
+            if (content && typeof content.phoneExists !== 'undefined') break;
+            lastError = 'Unexpected response shape';
+            content = null;
+        } catch (e) {
+            lastError = e.message || String(e);
+        }
+    }
+
     try {
-        const response = await fetch(url);
         const responseTime = Date.now() - startTime;
 
-        if (response.ok) {
-            const content = await response.json();
+        if (content) {
 
             // Mark ping as completed
             pingCompleted = true;
@@ -451,16 +499,11 @@ async function pingApi() {
             `;
             document.getElementById("pingResult").innerHTML = resultHtml;
         } else {
-            let detail = `${response.status} - ${response.statusText}`;
-            try {
-                const errBody = await response.json();
-                if (errBody && errBody.detail) detail = errBody.detail;
-            } catch (_) {}
             const errorHtml = `
                 <div class="result-box">
                     <div class="error">Ping failed!</div>
                     <div class="key">Error:</div>
-                    <div class="value">${detail}</div>
+                    <div class="value">${lastError || 'All proxies failed'}</div>
                 </div>
             `;
             document.getElementById("pingResult").innerHTML = errorHtml;
