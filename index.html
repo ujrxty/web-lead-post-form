@@ -413,20 +413,19 @@ async function pingApi() {
     pingBtn.disabled = true;
     pingBtn.innerHTML = '<span class="spinner"></span>Pinging...';
 
-    const partnerName = 'MetzInsurance';
-    const token = 'w4qwC60-E964tVzmF-n1KB9Ks1dr5peaaHG215215R2dAzFuiV7Zfg==';
     const sourcePhone = document.getElementById("pingPhone").value;
 
-    const corsProxy = 'https://api.allorigins.win/get?url=';
-    const apiUrl = `https://func-do-not-call.azurewebsites.net/api/v1/do_not_call/${partnerName}/${sourcePhone}?code=${token}`;
-    const url = corsProxy + encodeURIComponent(apiUrl);
+    // Call our own backend, which proxies to the DNC API.
+    // This avoids the unreliable third-party allorigins.win CORS proxy.
+    const url = `${LEAD_API_BASE}/api/ping/${encodeURIComponent(sourcePhone)}`;
 
+    const startTime = Date.now();
     try {
         const response = await fetch(url);
-        const responseData = await response.json();
+        const responseTime = Date.now() - startTime;
 
         if (response.ok) {
-            const content = JSON.parse(responseData.contents); // Parse the JSON content
+            const content = await response.json();
 
             // Mark ping as completed
             pingCompleted = true;
@@ -444,21 +443,24 @@ async function pingApi() {
                     <div class="key">Phone Exists:</div>
                     <div class="value ${content.phoneExists ? 'error' : 'success'}">${content.phoneExists ? "Yes - DO NOT CALL" : "No - Safe to call"}</div>
                     <div class="key">Source Phone:</div>
-                    <div class="value">${content.sourcePhone}</div>
-                    <div class="key">HTTP Status:</div>
-                    <div class="value">${responseData.status.http_code} - ${responseData.status.content_type}</div>
+                    <div class="value">${content.sourcePhone || sourcePhone}</div>
                     <div class="key">Response Time:</div>
-                    <div class="value">${responseData.status.response_time} ms</div>
+                    <div class="value">${responseTime} ms</div>
                     ${content.phoneExists ? '<div class="error mt-2">Form has been disabled. This phone number is on the Do Not Call list.</div>' : ''}
                 </div>
             `;
             document.getElementById("pingResult").innerHTML = resultHtml;
         } else {
+            let detail = `${response.status} - ${response.statusText}`;
+            try {
+                const errBody = await response.json();
+                if (errBody && errBody.detail) detail = errBody.detail;
+            } catch (_) {}
             const errorHtml = `
                 <div class="result-box">
                     <div class="error">Ping failed!</div>
-                    <div class="key">Error Status:</div>
-                    <div class="value">${response.status} - ${response.statusText}</div>
+                    <div class="key">Error:</div>
+                    <div class="value">${detail}</div>
                 </div>
             `;
             document.getElementById("pingResult").innerHTML = errorHtml;
