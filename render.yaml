@@ -1,6 +1,6 @@
 databases:
   - name: leads-db
-    plan: free
+    plan: basic_256mb
     databaseName: leads
     user: leads_user
 
@@ -23,7 +23,6 @@ services:
   - type: web
     name: lead-form
     runtime: static
-    plan: free
     buildCommand: echo "Static site"
     staticPublishPath: .
     headers:
