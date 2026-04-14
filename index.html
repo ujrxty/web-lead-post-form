@@ -154,11 +154,6 @@
         </div>
 
         <div class="md:col-span-2">
-            <label class="font-semibold text-gray-700">List Affiliate Name (Campaign)</label>
-            <input id="listAffiliateName" class="mt-1 p-3 w-full border rounded-lg" type="text" placeholder="Enter Affiliate Name">
-        </div>
-
-        <div class="md:col-span-2">
             <button id="submitBtn" type="button" onclick="submitLead()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-lg font-semibold shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed">Submit Lead</button>
         </div>
     </form>
@@ -274,7 +269,7 @@ async function submitLead() {
         postalCode: document.getElementById("postalCode").value,
         primaryInsurance: document.getElementById("primaryInsurance").value,
         totalMedCount: document.getElementById("totalMedCount").value,
-        listAffiliateName: document.getElementById("listAffiliateName").value
+        listAffiliateName: "AFF Holdings"
     };
 
     // Step 1: Check if phone already exists in our database
